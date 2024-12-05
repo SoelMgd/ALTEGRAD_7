@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch_geometric.nn import global_add_pool
+#from torch_geometric.nn import global_add_pool
 
 # Decoder
 class Decoder(nn.Module):
@@ -37,17 +37,12 @@ class Decoder(nn.Module):
         ############## Task 10
     
         ##################
-        # Pass through the MLP layers
-        for layer in self.fc:
-            x = layer(x)
-        
-        T1 = self.fc_proj(x)  # Shape: (batch_size, n_nodes * n_nodes)
-        
-        T2 = T1.view(-1, self.n_nodes, self.n_nodes)  # Shape: (batch_size, n_nodes, n_nodes)
-        
-        T2_sym = (T2 + T2.transpose(1, 2)) / 2  # Symmetrize the matrix
-        
-        adj = torch.sigmoid(T2_sym)
+        for fc_layer in self.fc:
+            x = fc_layer(x)
+
+        T2 = self.fc_proj(x)  # Shape: (batch_size, n_nodes * n_nodes)
+        T2 = T2.view(-1, self.n_nodes, self.n_nodes)
+        adj = (T2 + T2.transpose(1, 2)) / 2.0
         ##################
         
         return adj
@@ -79,20 +74,22 @@ class Encoder(nn.Module):
         ############## Task 8
     
         ##################
-        # Message passing layers
-        h = x
-        for mlp in self.mlps:
-            h = torch.mm(adj, h)  # Multiplication adjacency matrix and feature matrix
-            h = mlp(h)  # Apply the MLP
+        A_tilde = torch.eye(adj.size(0)).to(adj.device) + adj
+        D_tilde = torch.sum(A_tilde, dim=1)
+        D_tilde_inv = 1.0 / D_tilde
+        A_bar = D_tilde_inv.view(-1, 1) * A_tilde
 
-        # Aggregate node embeddings (readout)
-        idx = idx.unsqueeze(1).repeat(1, h.size(1))  # Ensure idx dimensions match h
-        out = torch.zeros(torch.max(idx) + 1, h.size(1), device=h.device)
-        out.scatter_add_(0, idx, h)  # Aggregate node representations
-
-        out = self.fc(out)
+        for layer in range(len(self.mlps)):
+            x = torch.mm(A_bar, x)
+            x = self.mlps[layer](x)
         ##################
 
+        # Readout
+        idx = idx.unsqueeze(1).repeat(1, x.size(1))
+        out = torch.zeros(torch.max(idx)+1, x.size(1), device=x.device, requires_grad=False)
+        out = out.scatter_add_(0, idx, x)
+        
+        out = self.fc(out)
         return out
 
 
@@ -125,9 +122,11 @@ class VariationalAutoEncoder(nn.Module):
         x_g  = self.encoder(adj, x, idx)
         
         ############## Task 9
-    
+        
+        ############## 
         mu = self.fc_mu(x_g)
-        logvar = self.fc_logvar(x_g) 
+        logvar = self.fc_logvar(x_g)
+        ##############
         
         x_g = self.reparameterize(mu, logvar)
         adj = self.decoder(x_g)
