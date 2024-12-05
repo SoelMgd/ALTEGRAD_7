@@ -41,7 +41,10 @@ class LSTM(nn.Module):
         ############## Task 4
     
         ##################
-        # your code here #
+        embedded = self.embedding(x)  # Shape: (batch_size, seq_len, embedding_dim)
+        lstm_out, (hidden, _) = self.lstm(embedded)  # hidden: (1, batch_size, hidden_dim)
+        last_hidden = hidden[-1]  # Shape: (batch_size, hidden_dim)
+        x = self.fc(last_hidden)  # Shape: (batch_size, 1)
         ##################
         
         return x.squeeze()

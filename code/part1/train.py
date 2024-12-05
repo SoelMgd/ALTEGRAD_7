@@ -27,6 +27,10 @@ X_train, y_train = create_train_dataset()
 n_train = 100000
 n_digits = 11
 
+# Conversion to tensors
+X_train_tensor = torch.tensor(X_train, dtype=torch.long, device=device) 
+y_train_tensor = torch.tensor(y_train, dtype=torch.float32, device=device)  
+
 # Initializes DeepSets model and optimizer
 deepsets = DeepSets(n_digits, embedding_dim, hidden_dim).to(device)
 optimizer = optim.Adam(deepsets.parameters(), lr=learning_rate)
@@ -45,7 +49,9 @@ for epoch in range(epochs):
         ############## Task 5
     
         ##################
-        # your code here #
+        batch_indices = idx[i:i + batch_size]
+        x_batch = X_train_tensor[batch_indices]
+        y_batch = y_train_tensor[batch_indices]
         ##################
         
         optimizer.zero_grad()
@@ -87,7 +93,9 @@ for epoch in range(epochs):
         ############## Task 5
         
         ##################
-        # your code here #
+        batch_indices = idx[i:i + batch_size]
+        x_batch = X_train_tensor[batch_indices]
+        y_batch = y_train_tensor[batch_indices]
         ##################
         
         optimizer.zero_grad()
