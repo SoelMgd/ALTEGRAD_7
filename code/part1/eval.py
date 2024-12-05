@@ -1,7 +1,3 @@
-"""
-Learning on Sets and Graph Generative Models - ALTEGRAD - Nov 2024
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, mean_absolute_error
@@ -20,6 +16,8 @@ hidden_dim = 64
 
 # Generates test data
 X_test, y_test = create_test_dataset()
+#print(X_test.shape)
+print(X_test[0].shape)
 cards = [X_test[i].shape[1] for i in range(len(X_test))]
 n_samples_per_card = X_test[0].shape[0]
 n_digits = 11
@@ -44,50 +42,32 @@ results = {'deepsets': {'acc':[], 'mae':[]}, 'lstm': {'acc':[], 'mae':[]}}
 for i in range(len(cards)):
     y_pred_deepsets = list()
     y_pred_lstm = list()
-
-    # Obtenir les ensembles de test et leurs cibles pour une cardinalité donnée
-    X_card_test = X_test[i]  # Multisets avec une cardinalité spécifique
-    y_card_test = y_test[i]  # Sommes correspondantes
-    
-    # Convertir en tenseurs PyTorch
-    X_card_tensor = torch.tensor(X_card_test, dtype=torch.long, device=device)
-    y_card_tensor = torch.tensor(y_card_test, dtype=torch.float32, device=device)
     for j in range(0, n_samples_per_card, batch_size):
         
         ############## Task 6
     
         ##################
-        x_batch = X_card_tensor[j:j + batch_size]
-        y_batch = y_card_tensor[j:j + batch_size]
-        
-        # Prédictions avec DeepSets
+        x_batch = X_test[i][j:j + batch_size]
+        x_batch = torch.tensor(x_batch, dtype=torch.long).to(device)
         with torch.no_grad():
-            y_pred_batch_deepsets = deepsets(x_batch)
-        y_pred_deepsets.append(y_pred_batch_deepsets)
-        
-        # Prédictions avec LSTM
+            output_deepsets = deepsets(x_batch).squeeze()
+        y_pred_deepsets.append(output_deepsets)
         with torch.no_grad():
-            y_pred_batch_lstm = lstm(x_batch)
-        y_pred_lstm.append(y_pred_batch_lstm)
+            output_lstm = lstm(x_batch).squeeze()
+        y_pred_lstm.append(output_lstm)
         ##################
         
-    y_pred_deepsets = torch.cat(y_pred_deepsets)
-    y_pred_deepsets = y_pred_deepsets.detach().cpu().numpy()
-
-    y_pred_deepsets_np = y_pred_deepsets.cpu().numpy()
-    y_pred_lstm_np = y_pred_lstm.cpu().numpy()
-    y_card_test_np = y_card_tensor.cpu().numpy()
+    y_pred_deepsets = torch.cat(y_pred_deepsets).detach().cpu().numpy().flatten()
+    y_pred_lstm = torch.cat(y_pred_lstm).detach().cpu().numpy().flatten()
+    y_true = y_test[i].flatten()
     
-    acc_deepsets = accuracy_score(np.round(y_card_test_np), np.round(y_pred_deepsets_np))
-    mae_deepsets = mean_absolute_error(y_card_test_np, y_pred_deepsets_np)
+    acc_deepsets = accuracy_score(y_true, np.round(y_pred_deepsets))
+    mae_deepsets = mean_absolute_error(y_true, y_pred_deepsets)
     results['deepsets']['acc'].append(acc_deepsets)
     results['deepsets']['mae'].append(mae_deepsets)
     
-    y_pred_lstm = torch.cat(y_pred_lstm)
-    y_pred_lstm = y_pred_lstm.detach().cpu().numpy()
-    
-    acc_lstm = accuracy_score(np.round(y_card_test_np), np.round(y_pred_lstm_np))
-    mae_lstm = mean_absolute_error(y_card_test_np, y_pred_lstm_np)
+    acc_lstm = accuracy_score(y_true, np.round(y_pred_lstm))
+    mae_lstm = mean_absolute_error(y_true, y_pred_lstm)
     results['lstm']['acc'].append(acc_lstm)
     results['lstm']['mae'].append(mae_lstm)
 
@@ -95,25 +75,25 @@ for i in range(len(cards)):
 ############## Task 7
     
 ##################
-# Visualisation des précisions
 plt.figure(figsize=(10, 6))
-plt.plot(cards, results['deepsets']['acc'], label='DeepSets Accuracy')
-plt.plot(cards, results['lstm']['acc'], label='LSTM Accuracy')
-plt.xlabel('Cardinality of the Input Sets')
+plt.plot(cards, results['deepsets']['acc'], label='DeepSets Accuracy', marker='o')
+plt.plot(cards, results['lstm']['acc'], label='LSTM Accuracy', marker='s')
+plt.xlabel('Cardinality of Input Sets')
 plt.ylabel('Accuracy')
-plt.title('Accuracy vs Cardinality')
+plt.title('Model Accuracies vs Cardinality of Input Sets')
 plt.legend()
-plt.savefig('precisions.png')
+plt.grid(True)
+plt.savefig('accuracies.png')
 plt.show()
 
-# Visualisation des erreurs absolues moyennes
 plt.figure(figsize=(10, 6))
-plt.plot(cards, results['deepsets']['mae'], label='DeepSets MAE')
-plt.plot(cards, results['lstm']['mae'], label='LSTM MAE')
-plt.xlabel('Cardinality of the Input Sets')
-plt.ylabel('Mean Absolute Error (MAE)')
-plt.title('MAE vs Cardinality')
+plt.plot(cards, results['deepsets']['mae'], label='DeepSets MAE', marker='o')
+plt.plot(cards, results['lstm']['mae'], label='LSTM MAE', marker='s')
+plt.xlabel('Cardinality of Input Sets')
+plt.ylabel('Mean Absolute Error')
+plt.title('Model MAE vs Cardinality of Input Sets')
 plt.legend()
-plt.savefig('erreurs.png')
+plt.grid(True)
+plt.savefig('mae.png')  
 plt.show()
 ##################
