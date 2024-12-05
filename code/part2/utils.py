@@ -46,4 +46,5 @@ def find_communities_and_plot(G):
     # Draw the graph
     plt.title('Generated graph')
     nx.draw(G)
+    plt.savefig('graph.png')
     plt.show()
