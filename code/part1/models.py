@@ -18,7 +18,11 @@ class DeepSets(nn.Module):
         ############## Task 3
     
         ##################
-        # your code here #
+        
+        embedded = self.embedding(x) 
+        transformed = self.tanh(self.fc1(embedded))  
+        summed = transformed.sum(dim=1)
+        x = self.fc2(summed)
         ##################
         
         return x.squeeze()
