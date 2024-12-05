@@ -1,51 +1,39 @@
 """
 Learning on Sets and Graph Generative Models - ALTEGRAD - Nov 2024
 """
-
 import numpy as np
-
 
 def create_train_dataset():
     n_train = 100000
     max_train_card = 10
 
     ############## Task 1
-    
-    ##################
-        # Generate training multisets
-    X_train = []
-    y_train = []
+    X_train = np.zeros((n_train, max_train_card), dtype=int)
+    y_train = np.zeros(n_train, dtype=int)
+    M = np.random.randint(1, max_train_card + 1, n_train)
 
-    for _ in range(n_train):
-        # Randomly select the cardinality of the multiset (1 to 10)
-        cardinality = np.random.randint(1, max_train_card + 1)
-        # Generate random digits from {1, ..., 10}
-        multiset = np.random.randint(1, 11, size=cardinality)
-        # Pad with zeros to ensure all multisets have the same length (10)
-        padded_multiset = np.pad(multiset, (max_train_card - len(multiset), 0), mode='constant')
-        X_train.append(padded_multiset)
-        y_train.append(multiset.sum())  # Compute the target as the sum of the digits
-    ##################
+    for i in range(n_train):
+        M_i = M[i]
+        digits = np.random.randint(1, 11, M_i)
+        X_train[i, -M_i:] = digits
+        y_train[i] = digits.sum()
+    ##############
 
     return X_train, y_train
-
 
 def create_test_dataset():
     
     ############## Task 2
-    
-    ##################
-    n_test_samples = 200000
     X_test = []
     y_test = []
 
-    # Generate test multisets with varying cardinalities (5 to 100)
-    for cardinality in range(5, 101, 5):  # Step size is 5
-        for _ in range(n_test_samples // ((100 - 5) // 5 + 1)):  # 10,000 samples per cardinality
-            # Generate random digits from {1, ..., 10}
-            multiset = np.random.randint(1, 11, size=cardinality)
-            X_test.append(multiset)
-            y_test.append(multiset.sum())  # Compute the target as the sum of the digits
-    ##################
+    for card in range(5, 101, 5):
+        n_samples = 10000
+        samples = np.random.randint(1, 11, size=(n_samples, card))
+        targets = np.sum(samples, axis=1)
+        
+        X_test.append(samples)
+        y_test.append(targets)
+    ##############
 
     return X_test, y_test
