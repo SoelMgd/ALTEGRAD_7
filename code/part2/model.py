@@ -82,17 +82,17 @@ class Encoder(nn.Module):
         # Message passing layers
         h = x
         for mlp in self.mlps:
-            h = torch.mm(adj, h)  # Matrix multiplication A * H
+            h = torch.mm(adj, h)  # Multiplication adjacency matrix and feature matrix
             h = mlp(h)  # Apply the MLP
-            h = self.dropout(h)  # Dropout for regularization
+
+        # Aggregate node embeddings (readout)
+        idx = idx.unsqueeze(1).repeat(1, h.size(1))  # Ensure idx dimensions match h
+        out = torch.zeros(torch.max(idx) + 1, h.size(1), device=h.device)
+        out.scatter_add_(0, idx, h)  # Aggregate node representations
+
+        out = self.fc(out)
         ##################
 
-        # Readout
-        idx = idx.unsqueeze(1).repeat(1, x.size(1))
-        out = torch.zeros(torch.max(idx)+1, x.size(1), device=x.device, requires_grad=False)
-        out = out.scatter_add_(0, idx, x)
-        
-        out = self.fc(out)
         return out
 
 
