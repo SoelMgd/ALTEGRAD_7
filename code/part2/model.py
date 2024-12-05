@@ -37,7 +37,17 @@ class Decoder(nn.Module):
         ############## Task 10
     
         ##################
-        # your code here #
+        # Pass through the MLP layers
+        for layer in self.fc:
+            x = layer(x)
+        
+        T1 = self.fc_proj(x)  # Shape: (batch_size, n_nodes * n_nodes)
+        
+        T2 = T1.view(-1, self.n_nodes, self.n_nodes)  # Shape: (batch_size, n_nodes, n_nodes)
+        
+        T2_sym = (T2 + T2.transpose(1, 2)) / 2  # Symmetrize the matrix
+        
+        adj = torch.sigmoid(T2_sym)
         ##################
         
         return adj
@@ -69,7 +79,12 @@ class Encoder(nn.Module):
         ############## Task 8
     
         ##################
-        # your code here #
+        # Message passing layers
+        h = x
+        for mlp in self.mlps:
+            h = torch.mm(adj, h)  # Matrix multiplication A * H
+            h = mlp(h)  # Apply the MLP
+            h = self.dropout(h)  # Dropout for regularization
         ##################
 
         # Readout
@@ -111,8 +126,8 @@ class VariationalAutoEncoder(nn.Module):
         
         ############## Task 9
     
-        mu = # your code here
-        logvar = # your code here
+        mu = self.fc_mu(x_g)
+        logvar = self.fc_logvar(x_g) 
         
         x_g = self.reparameterize(mu, logvar)
         adj = self.decoder(x_g)
